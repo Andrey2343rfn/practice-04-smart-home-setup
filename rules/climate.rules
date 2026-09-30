@@ -1,0 +1,23 @@
+rule "Розумне керування температурою" 
+when 
+    Item CurrentTemperature received update or 
+    Item MotionDetector changed or 
+    Time cron "0 */10 * * * ?" 
+then 
+    val currentTemp = CurrentTemperature.state as DecimalType 
+    val targetTemp = TargetTemperature.state as DecimalType 
+    var desiredTemp = 21.0 
+    val hour = now.getHour() 
+    switch (hour) { 
+        case 6..8: desiredTemp = 22.0 
+        case 9..17: desiredTemp = 20.0 
+        case 18..22: desiredTemp = 22.5 
+        default: desiredTemp = 19.0 
+    } 
+    if (Math.abs(targetTemp.doubleValue - desiredTemp) > 0.5) { 
+        TargetTemperature.sendCommand(desiredTemp) 
+    } 
+    val tempDiff = Math.abs(currentTemp.doubleValue - desiredTemp) 
+    val comfort = Math.max(0, 10 - tempDiff * 2) 
+    ComfortIndex.postUpdate(comfort) 
+end
